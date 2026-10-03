@@ -1,4 +1,4 @@
-name: Build PlayJava APK
+name: Build PlayJava Minecraft APK
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout PlayJava
         uses: actions/checkout@v4
 
       - name: Setup JDK 17
@@ -18,16 +18,33 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle 8.13
-        uses: gradle/actions/setup-gradle@v4
+      - name: Checkout Amethyst Minecraft runtime base
+        uses: actions/checkout@v4
         with:
-          gradle-version: '8.13'
+          repository: AngelAuraMC/Amethyst-Android
+          ref: v3_openjdk
+          path: amethyst
+          submodules: recursive
 
-      - name: Build debug APK
-        run: gradle assembleDebug --no-daemon
+      - name: Build Minecraft Java launcher
+        working-directory: amethyst
+        run: |
+          chmod +x gradlew
+          ./gradlew :app_pojavlauncher:assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Prepare PlayJava APK
+        run: |
+          mkdir -p app/build/outputs/apk/debug
+          cp amethyst/app_pojavlauncher/build/outputs/apk/debug/*.apk app/build/outputs/apk/debug/PlayJava-debug.apk
+
+      - name: Upload PlayJava APK
         uses: actions/upload-artifact@v4
         with:
-          name: PlayJava-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: PlayJava-Minecraft-debug
+          path: app/build/outputs/apk/debug/PlayJava-debug.apk
+
+      - name: Upload build information
+        uses: actions/upload-artifact@v4
+        with:
+          name: PlayJava-build-info
+          path: amethyst/README.md
