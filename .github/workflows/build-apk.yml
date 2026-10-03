@@ -26,7 +26,12 @@ jobs:
           path: amethyst
           submodules: recursive
 
-      - name: Build PlayJava runtime
+      - name: Verify Microsoft authentication sources
+        run: |
+          test -f amethyst/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/authenticator/microsoft/MicrosoftBackgroundLogin.java
+          grep -R "MicrosoftBackgroundLogin" -n amethyst/app_pojavlauncher/src/main/java | head -20
+
+      - name: Build Minecraft Java launcher
         working-directory: amethyst
         run: |
           chmod +x gradlew
@@ -35,7 +40,9 @@ jobs:
       - name: Prepare PlayJava APK
         run: |
           mkdir -p app/build/outputs/apk/debug
-          cp amethyst/app_pojavlauncher/build/outputs/apk/debug/*.apk app/build/outputs/apk/debug/PlayJava-debug.apk
+          APK=$(find amethyst/app_pojavlauncher/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -type f | head -1)
+          test -n "$APK"
+          cp "$APK" app/build/outputs/apk/debug/PlayJava-debug.apk
 
       - name: Upload PlayJava APK
         uses: actions/upload-artifact@v4
