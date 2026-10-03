@@ -26,10 +26,26 @@ jobs:
           path: amethyst
           submodules: recursive
 
-      - name: Verify Microsoft authentication sources
+      - name: Patch Microsoft OAuth token exchange
+        run: |
+          FILE="amethyst/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/authenticator/microsoft/MicrosoftBackgroundLogin.java"
+          test -f "$FILE"
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("amethyst/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/authenticator/microsoft/MicrosoftBackgroundLogin.java")
+          s = p.read_text()
+          old = '"redirect_url", "https://login.live.com/oauth20_desktop.srf",'
+          new = '"redirect_uri", "https://login.live.com/oauth20_desktop.srf",'
+          if old not in s:
+              raise SystemExit("Expected OAuth parameter was not found; refusing to build an unverified patch")
+          p.write_text(s.replace(old, new, 1))
+          PY
+          grep -n 'redirect_uri.*oauth20_desktop' "$FILE"
+
+      - name: Verify Microsoft authentication source
         run: |
           test -f amethyst/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/authenticator/microsoft/MicrosoftBackgroundLogin.java
-          grep -R "MicrosoftBackgroundLogin" -n amethyst/app_pojavlauncher/src/main/java | head -20
+          grep -q '"redirect_uri"' amethyst/app_pojavlauncher/src/main/java/net/kdt/pojavlaunch/authenticator/microsoft/MicrosoftBackgroundLogin.java
 
       - name: Build Minecraft Java launcher
         working-directory: amethyst
